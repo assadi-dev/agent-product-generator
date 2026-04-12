@@ -37,6 +37,8 @@ with right:
         st.session_state.generating = False
 
         if sheet:
+            # Attach optional image from session state (not sent to the agent)
+            sheet["product_image_b64"] = st.session_state.get("product_image_b64")
             set_current_sheet(sheet)
             save_to_history(sheet)
             trace_placeholder.empty()

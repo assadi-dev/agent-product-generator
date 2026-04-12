@@ -46,3 +46,4 @@ class ProductSheet(BaseModel):
     generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     agent_trace: list[str] = Field(default_factory=list, description="Steps the agent took")
     source_url: Optional[str] = None
+    product_image_b64: Optional[str] = None

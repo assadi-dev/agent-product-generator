@@ -1,6 +1,8 @@
 """
 Renders a product sheet dict as a styled Streamlit preview.
 """
+import base64
+from io import BytesIO
 import streamlit as st
 
 
@@ -11,6 +13,13 @@ def render_sheet_preview(sheet: dict):
     # Hero
     st.markdown(f"## {sheet.get('title', sheet.get('product_name', ''))}")
     st.markdown(f"*{sheet.get('tagline', '')}*")
+
+    # Product image (optional)
+    img_b64 = sheet.get("product_image_b64")
+    if img_b64:
+        img_bytes = base64.b64decode(img_b64)
+        st.image(BytesIO(img_bytes), use_column_width="auto")
+
     st.divider()
 
     # Descriptions

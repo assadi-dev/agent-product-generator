@@ -1,14 +1,14 @@
 """
 PDF export using ReportLab Platypus for clean, paginated output.
 """
+import base64
 from io import BytesIO
-from datetime import datetime
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.lib.enums import TA_LEFT, TA_CENTER
+from reportlab.lib.enums import TA_CENTER
 from reportlab.platypus import (
     SimpleDocTemplate,
     Paragraph,
@@ -16,8 +16,8 @@ from reportlab.platypus import (
     Table,
     TableStyle,
     HRFlowable,
+    Image as RLImage,
 )
-from reportlab.platypus import KeepTogether
 
 from backend.models.product_sheet import ProductSheet
 
@@ -136,6 +136,13 @@ def generate_pdf(sheet: ProductSheet) -> bytes:
     story.append(Paragraph(sheet.title, s["hero_title"]))
     story.append(Paragraph(sheet.tagline, s["tagline"]))
     story.append(HRFlowable(width="100%", thickness=1, color=ACCENT, spaceAfter=4 * mm))
+
+    # ── Product image (optional)
+    if sheet.product_image_b64:
+        img_io = BytesIO(base64.b64decode(sheet.product_image_b64))
+        img = RLImage(img_io, width=doc.width, height=60 * mm, kind="proportional")
+        story.append(img)
+        story.append(Spacer(1, 4 * mm))
 
     # ── Short description
     story.append(Paragraph("Overview", s["section_heading"]))

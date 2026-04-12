@@ -2,6 +2,7 @@
 Left-panel input form component.
 Returns a GenerateRequest-compatible dict when submitted.
 """
+import base64
 import streamlit as st
 
 
@@ -10,6 +11,23 @@ def render_input_form() -> dict | None:
     Renders the product generation form.
     Returns the form data dict on submit, or None if not submitted.
     """
+    # File uploader must live outside st.form to work correctly in Streamlit
+    st.markdown("**Image produit (optionnel)**")
+    uploaded = st.file_uploader(
+        "Importer une image",
+        type=["jpg", "jpeg", "png", "webp"],
+        label_visibility="collapsed",
+    )
+    if uploaded is not None:
+        st.session_state["product_image_b64"] = base64.b64encode(uploaded.read()).decode()
+        st.session_state["product_image_mime"] = uploaded.type
+        st.image(uploaded, use_column_width=True)
+    elif "product_image_b64" not in st.session_state:
+        st.session_state["product_image_b64"] = None
+        st.session_state["product_image_mime"] = None
+
+    st.divider()
+
     with st.form("generate_form"):
         st.subheader("Product Details")
 
