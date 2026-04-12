@@ -4,7 +4,7 @@ These tests mock the agent graph so they don't require a real API key.
 """
 import json
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch, MagicMock
 from httpx import AsyncClient, ASGITransport
 
@@ -28,7 +28,7 @@ def _mock_sheet() -> ProductSheet:
         seo_keywords=["test", "product", "electronics"],
         meta_title="Test Product",
         meta_description="Buy the best Test Product for professionals.",
-        generated_at=datetime.utcnow(),
+        generated_at=datetime.now(timezone.utc),
     )
 
 

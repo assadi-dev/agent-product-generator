@@ -20,9 +20,9 @@ venv/
 env/
 ENV/
 
-# ── Poetry ───────────────────────────────────────────────────────────────────
-# Keep poetry.lock in version control — remove this line if you use pip only
-# poetry.lock
+# ── uv ───────────────────────────────────────────────────────────────────────
+# uv.lock doit être commité (reproductibilité des builds)
+# Ne pas l'ajouter ici
 
 # ── Generated exports ─────────────────────────────────────────────────────────
 exports/pdf/

@@ -55,50 +55,62 @@ agent-product-generator/
 │   └── components/         # Reusable UI components
 ├── tests/                  # Unit + integration tests
 ├── .env.example
-└── requirements.txt
+└── pyproject.toml
 ```
 
 ---
 
 ## Quickstart
 
-### 1. Clone and install
+### 1. Prérequis — installer uv
+
+```bash
+# Windows
+winget install astral-sh.uv
+
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### 2. Clone et installation des dépendances
 
 ```bash
 git clone <your-repo-url>
 cd agent-product-generator
-pip install -r requirements.txt
+uv sync
 ```
 
-### 2. Configure environment
+`uv sync` crée automatiquement le venv et installe toutes les dépendances depuis `pyproject.toml`.
+
+### 3. Configurer l'environnement
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set at minimum:
+Éditer `.env` et renseigner au minimum :
 
 ```env
 LLM_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### 3. Start the backend
+### 4. Lancer le backend
 
 ```bash
-uvicorn backend.main:app --reload
+uv run uvicorn backend.main:app --reload
 ```
 
-API available at `http://localhost:8000`
-Interactive docs at `http://localhost:8000/docs`
+API disponible sur `http://localhost:8000`
+Docs interactives sur `http://localhost:8000/docs`
 
-### 4. Start the frontend
+### 5. Lancer le frontend (autre terminal)
 
 ```bash
-streamlit run frontend/app.py
+uv run streamlit run frontend/app.py
 ```
 
-UI available at `http://localhost:8501`
+UI disponible sur `http://localhost:8501`
 
 ---
 
