@@ -4,6 +4,8 @@ Returns a GenerateRequest-compatible dict when submitted.
 """
 import base64
 import streamlit as st
+from PIL import Image
+import io
 
 
 def render_input_form() -> dict | None:
@@ -19,9 +21,11 @@ def render_input_form() -> dict | None:
         label_visibility="collapsed",
     )
     if uploaded is not None:
-        st.session_state["product_image_b64"] = base64.b64encode(uploaded.read()).decode()
+        img_bytes = uploaded.read()
+        st.session_state["product_image_b64"] = base64.b64encode(img_bytes).decode()
         st.session_state["product_image_mime"] = uploaded.type
-        st.image(uploaded, use_column_width=True)
+        image = Image.open(io.BytesIO(img_bytes))
+        st.image(image, width=600)
     elif "product_image_b64" not in st.session_state:
         st.session_state["product_image_b64"] = None
         st.session_state["product_image_mime"] = None
