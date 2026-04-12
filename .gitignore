@@ -44,7 +44,7 @@ aws-credentials*
 # ── Ollama (downloaded model weights) ────────────────────────────────────────
 *.gguf
 *.bin
-models/
+
 
 # ── Tests & coverage ─────────────────────────────────────────────────────────
 .pytest_cache/
