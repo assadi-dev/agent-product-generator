@@ -54,7 +54,7 @@ async def test_generate_returns_product_sheet():
     mock_graph = AsyncMock()
     mock_graph.ainvoke = AsyncMock(return_value=mock_final_state)
 
-    with patch("backend.api.routes.generate.build_graph", return_value=(mock_graph, "test-thread-id")):
+    with patch("backend.agent.graph.build_graph", return_value=(mock_graph, "test-thread-id")):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post("/api/v1/generate", json={
                 "product_name": "Test Product",

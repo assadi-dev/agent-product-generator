@@ -1,9 +1,7 @@
 """
 LangGraph node functions for the product sheet agent.
-Each function takes AgentState and returns a partial state update dict.
 """
-import json
-from langchain_core.messages import SystemMessage, AIMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from backend.agent.state import AgentState
 from backend.models.product_sheet import ProductSheet
 from backend.config import settings
@@ -15,7 +13,6 @@ from backend.config import settings
 
 def _build_system_prompt(state: AgentState) -> str:
     req = state["request"]
-    context_hint = ""
     if state.get("scraped_content"):
         context_hint = "Scraped web content is available in the conversation — use it as product context."
     elif req.raw_description:
@@ -52,14 +49,10 @@ Be thorough. Produce rich, detailed content at each step."""
 
 
 # ---------------------------------------------------------------------------
-# route_input node — decides whether to scrape a URL first
+# route_input node
 # ---------------------------------------------------------------------------
 
 async def route_input_node(state: AgentState) -> dict:
-    """
-    Initialises the state. Web scraping is handled as a separate node (scrape_url_node)
-    before this hands off to the main agent loop.
-    """
     return {
         "scraped_content": state.get("scraped_content"),
         "agent_trace": ["Starting product sheet generation..."],
@@ -71,7 +64,7 @@ async def route_input_node(state: AgentState) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# scrape_url node — fetches and stores scraped content in state
+# scrape_url node
 # ---------------------------------------------------------------------------
 
 async def scrape_url_node(state: AgentState) -> dict:
@@ -80,68 +73,62 @@ async def scrape_url_node(state: AgentState) -> dict:
     trace = state.get("agent_trace", [])
     try:
         result = await scrape_product_url.ainvoke({"url": url})
-        trace = trace + [f"Scraped URL: {url}"]
-        return {"scraped_content": result, "agent_trace": trace}
+        return {"scraped_content": result, "agent_trace": trace + [f"Scraped URL: {url}"]}
     except Exception as exc:
-        trace = trace + [f"URL scraping failed: {exc}"]
-        return {"scraped_content": None, "agent_trace": trace}
+        return {"scraped_content": None, "agent_trace": trace + [f"URL scraping failed: {exc}"]}
 
 
 # ---------------------------------------------------------------------------
-# agent node — the core ReAct LLM node
+# agent node  — FIXED: returns only NEW messages (add_messages handles accumulation)
 # ---------------------------------------------------------------------------
 
 async def agent_node(state: AgentState, llm_with_tools) -> dict:
-    """Core ReAct reasoning node. LLM receives full context and decides which tools to call."""
+    """Core ReAct reasoning node."""
     iteration = state.get("iteration_count", 0)
     if iteration >= settings.agent_max_iterations:
         return {"error": f"Agent exceeded {settings.agent_max_iterations} iterations without completing."}
 
     system_msg = SystemMessage(content=_build_system_prompt(state))
+    messages = list(state.get("messages", []))
 
-    # Build context message if we have scraped content and no messages yet
-    initial_messages = list(state.get("messages", []))
-    if not initial_messages and state.get("scraped_content"):
-        from langchain_core.messages import HumanMessage
-        initial_messages = [
-            HumanMessage(content=f"Scraped product page content:\n\n{state['scraped_content']}\n\nPlease generate the product sheet now.")
-        ]
-    elif not initial_messages:
-        from langchain_core.messages import HumanMessage
-        req = state["request"]
-        context = req.raw_description or f"No additional context. Use your knowledge of {req.product_name} in the {req.category} category."
-        initial_messages = [
-            HumanMessage(content=f"Context:\n{context}\n\nPlease generate the product sheet now.")
-        ]
+    # First call only: inject the initial human message into the messages list
+    # (it is NOT yet in state — we add it via the return dict so add_messages records it)
+    new_messages: list = []
+    if not messages:
+        if state.get("scraped_content"):
+            first_msg = HumanMessage(
+                content=f"Scraped product page content:\n\n{state['scraped_content']}\n\nPlease generate the product sheet now."
+            )
+        else:
+            req = state["request"]
+            context = req.raw_description or f"Use your knowledge of {req.product_name} in the {req.category} category."
+            first_msg = HumanMessage(content=f"Context:\n{context}\n\nPlease generate the product sheet now.")
+        messages = [first_msg]
+        new_messages.append(first_msg)
 
-    response = await llm_with_tools.ainvoke([system_msg] + initial_messages)
+    response = await llm_with_tools.ainvoke([system_msg] + messages)
+    new_messages.append(response)
 
     trace = state.get("agent_trace", [])
-    # Extract tool calls for trace
     if hasattr(response, "tool_calls") and response.tool_calls:
         for tc in response.tool_calls:
             trace = trace + [f"Calling tool: {tc['name']}"]
 
     return {
-        "messages": initial_messages + [response],
+        "messages": new_messages,       # ← only NEW messages; add_messages appends them
         "iteration_count": iteration + 1,
         "agent_trace": trace,
     }
 
 
 # ---------------------------------------------------------------------------
-# validate_output node — attempts to parse the final product sheet from messages
+# validate_output node
 # ---------------------------------------------------------------------------
 
 def validate_output_node(state: AgentState) -> dict:
-    """
-    Searches recent tool messages for a valid ProductSheet JSON.
-    Sets state['product_sheet'] if found, otherwise sets state['error'].
-    """
     from langchain_core.messages import ToolMessage
     messages = state.get("messages", [])
 
-    # Look for format_product_sheet tool result
     for msg in reversed(messages):
         if isinstance(msg, ToolMessage) and msg.name == "format_product_sheet":
             try:

@@ -1,5 +1,5 @@
 """
-Renders the live agent trace as the SSE stream arrives.
+Live agent trace component — consumes SSE stream from the backend.
 """
 import streamlit as st
 
@@ -21,10 +21,10 @@ def render_agent_trace(trace: list[str]):
             st.markdown(f"- {step}")
 
 
-def stream_with_trace(payload: dict, sheet_placeholder, trace_placeholder):
+def stream_with_trace(payload: dict, sheet_placeholder, trace_placeholder) -> dict | None:
     """
     Calls the SSE stream endpoint, updates the trace live, and returns the final sheet dict.
-    `sheet_placeholder` and `trace_placeholder` are st.empty() containers.
+    Returns None on error.
     """
     from frontend.utils.api_client import generate_stream
 
@@ -32,29 +32,42 @@ def stream_with_trace(payload: dict, sheet_placeholder, trace_placeholder):
     completed_tools: list[str] = []
     sheet = None
 
-    for event in generate_stream(payload):
-        event_type = event.get("type")
+    try:
+        for event in generate_stream(payload):
+            event_type = event.get("type")
 
-        if event_type == "tool_start":
-            tool_name = event.get("tool", "")
-            active_tools.append(tool_name)
-            _update_trace_ui(trace_placeholder, active_tools, completed_tools)
+            if event_type == "tool_start":
+                tool_name = event.get("tool", "")
+                if tool_name not in active_tools:
+                    active_tools.append(tool_name)
+                _update_trace_ui(trace_placeholder, active_tools, completed_tools)
 
-        elif event_type == "tool_end":
-            tool_name = event.get("tool", "")
-            if tool_name in active_tools:
-                active_tools.remove(tool_name)
-            if tool_name not in completed_tools:
-                completed_tools.append(tool_name)
-            _update_trace_ui(trace_placeholder, active_tools, completed_tools)
+            elif event_type == "tool_end":
+                tool_name = event.get("tool", "")
+                if tool_name in active_tools:
+                    active_tools.remove(tool_name)
+                if tool_name not in completed_tools:
+                    completed_tools.append(tool_name)
+                _update_trace_ui(trace_placeholder, active_tools, completed_tools)
 
-        elif event_type == "complete":
-            sheet = event.get("sheet")
+            elif event_type == "complete":
+                sheet = event.get("sheet")
+                # Mark any remaining active tools as done
+                for t in list(active_tools):
+                    completed_tools.append(t)
+                active_tools.clear()
+                _update_trace_ui(trace_placeholder, active_tools, completed_tools)
 
-        elif event_type == "error":
-            trace_placeholder.error(f"Agent error: {event.get('message')}")
-            return None
+            elif event_type == "error":
+                trace_placeholder.error(f"Agent error: {event.get('message', 'Unknown error')}")
+                return None
 
+    except Exception as exc:
+        trace_placeholder.error(f"Connection error: {exc}")
+        return None
+
+    if sheet is None:
+        trace_placeholder.error("Generation completed but no product sheet was returned.")
     return sheet
 
 

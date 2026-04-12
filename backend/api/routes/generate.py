@@ -38,7 +38,6 @@ async def generate(request: GenerateRequest):
     if sheet is None:
         raise HTTPException(status_code=422, detail="Agent did not produce a product sheet.")
 
-    # Attach trace
     sheet.agent_trace = final_state.get("agent_trace", [])
     return GenerateResponse(success=True, product_sheet=sheet)
 
@@ -46,37 +45,60 @@ async def generate(request: GenerateRequest):
 @router.post("/generate/stream")
 async def generate_stream(request: GenerateRequest):
     """
-    SSE streaming endpoint — pushes agent events in real time.
+    SSE streaming endpoint.
+    Uses astream(stream_mode='updates') — more reliable than astream_events across LangGraph versions.
     Event types: tool_start | tool_end | complete | error
     """
     from backend.agent.graph import build_graph
+    from langchain_core.messages import AIMessage, ToolMessage
+
     graph, thread_id = build_graph()
     config = {"configurable": {"thread_id": thread_id}}
 
     async def event_generator():
         try:
-            async for event in graph.astream_events(
+            async for chunk in graph.astream(
                 _initial_state(request),
                 config=config,
-                version="v2",
+                stream_mode="updates",
             ):
-                event_type = event.get("event", "")
-                name = event.get("name", "")
+                for node_name, state_update in chunk.items():
+                    if node_name == "__end__":
+                        continue
 
-                if event_type == "on_tool_start":
-                    payload = json.dumps({"type": "tool_start", "tool": name})
-                    yield f"data: {payload}\n\n"
+                    # Agent node returned — detect tool calls in the new messages
+                    if node_name == "agent":
+                        for msg in state_update.get("messages", []):
+                            if isinstance(msg, AIMessage) and getattr(msg, "tool_calls", None):
+                                for tc in msg.tool_calls:
+                                    payload = json.dumps({"type": "tool_start", "tool": tc["name"]})
+                                    yield f"data: {payload}\n\n"
 
-                elif event_type == "on_tool_end":
-                    payload = json.dumps({"type": "tool_end", "tool": name})
-                    yield f"data: {payload}\n\n"
+                    # Tools node returned — detect completed tool calls
+                    elif node_name == "tools":
+                        for msg in state_update.get("messages", []):
+                            if isinstance(msg, ToolMessage) and msg.name:
+                                payload = json.dumps({"type": "tool_end", "tool": msg.name})
+                                yield f"data: {payload}\n\n"
 
-                elif event_type == "on_chain_end" and name == "LangGraph":
-                    output = event.get("data", {}).get("output", {})
-                    sheet = output.get("product_sheet")
+                    # scrape_url node returned
+                    elif node_name == "scrape_url":
+                        payload = json.dumps({"type": "tool_end", "tool": "scrape_product_url"})
+                        yield f"data: {payload}\n\n"
+
+                    # Any node that produced a product_sheet → generation complete
+                    sheet = state_update.get("product_sheet")
                     if sheet is not None:
-                        # sheet is a ProductSheet instance
-                        payload = json.dumps({"type": "complete", "sheet": sheet.model_dump(mode="json")})
+                        payload = json.dumps({
+                            "type": "complete",
+                            "sheet": sheet.model_dump(mode="json"),
+                        })
+                        yield f"data: {payload}\n\n"
+
+                    # Any node that produced an error
+                    error = state_update.get("error")
+                    if error:
+                        payload = json.dumps({"type": "error", "message": error})
                         yield f"data: {payload}\n\n"
 
         except Exception as exc:

@@ -5,35 +5,44 @@ description = "AI-powered product sheet generator using LangChain/LangGraph agen
 requires-python = ">=3.12"
 
 dependencies = [
-    # LangChain ecosystem (versions liées — laisser uv résoudre la compatibilité)
+    # LangChain ecosystem
     "langchain>=0.3.25",
     "langchain-anthropic>=0.3.15",
     "langchain-openai>=0.3.16",
     "langgraph>=0.4.1",
     "langchain-community>=0.3.23",
+
     # API
-    "fastapi==0.115.12",
-    "uvicorn[standard]==0.34.0",
-    "pydantic==2.11.3",
-    "pydantic-settings==2.9.1",
-    "python-multipart==0.0.20",
+    "fastapi>=0.115.12",
+    "uvicorn[standard]>=0.34.0",
+    "pydantic>=2.11.3",
+    "pydantic-settings>=2.9.1",
+    "python-multipart>=0.0.20",
+
     # Frontend
-    "streamlit==1.45.0",
+    "streamlit>=1.45.0",
+
     # LLM providers
     "anthropic>=0.52.0",
     "openai>=1.77.0",
     "langchain-aws>=0.2.14",
     "langchain-ollama>=0.3.3",
     "boto3>=1.37.38",
+
     # Web scraping
-    "httpx==0.28.1",
-    "beautifulsoup4==4.13.4",
+    "httpx>=0.28.1",
+    "beautifulsoup4>=4.13.4",
+
     # Export
-    "reportlab==4.4.0",
+    "reportlab>=4.4.0",
+
     # Utilities
-    "python-dotenv==1.1.0",
-    "tenacity==9.1.2",
-    "structlog==25.3.0",
+    "python-dotenv>=1.1.0",
+    "tenacity>=9.1.2",
+    "structlog>=25.3.0",
+
+    # Fix: chardet 5+ wraps charset_normalizer avec une API interne instable
+    "chardet<5",
 ]
 
 [dependency-groups]

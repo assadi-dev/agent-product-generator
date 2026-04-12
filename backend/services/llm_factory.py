@@ -4,9 +4,9 @@ from backend.config import settings
 # Default models per provider — overridden by LLM_MODEL env var
 _DEFAULTS: dict[str, str] = {
     "anthropic":   "claude-sonnet-4-6",
-    "openai":      "gpt-4o",
-    "openrouter":  "anthropic/claude-sonnet-4-5",   # any OpenRouter model slug works
-    "bedrock":     "anthropic.claude-3-5-sonnet-20241022-v2:0",
+    "openai":      "gpt-4.1",
+    "openrouter":  "anthropic/claude-sonnet-4-6",
+    "bedrock":     "anthropic.claude-sonnet-4-6-20260101-v1:0",
     "ollama":      "llama3.2",
 }
 
