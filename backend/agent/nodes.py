@@ -5,6 +5,9 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from backend.agent.state import AgentState
 from backend.models.product_sheet import ProductSheet
 from backend.config import settings
+from backend.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +56,15 @@ Be thorough. Produce rich, detailed content at each step."""
 # ---------------------------------------------------------------------------
 
 async def route_input_node(state: AgentState) -> dict:
+    req = state["request"]
+    logger.info(
+        "agent_start",
+        product=req.product_name,
+        category=req.category,
+        language=req.language.value,
+        tone=req.tone.value,
+        has_url=bool(req.source_url),
+    )
     return {
         "scraped_content": state.get("scraped_content"),
         "agent_trace": ["Starting product sheet generation..."],
@@ -86,6 +98,11 @@ async def agent_node(state: AgentState, llm_with_tools) -> dict:
     """Core ReAct reasoning node."""
     iteration = state.get("iteration_count", 0)
     if iteration >= settings.agent_max_iterations:
+        logger.error(
+            "agent_max_iterations_exceeded",
+            product=state["request"].product_name,
+            max_iterations=settings.agent_max_iterations,
+        )
         return {"error": f"Agent exceeded {settings.agent_max_iterations} iterations without completing."}
 
     system_msg = SystemMessage(content=_build_system_prompt(state))
@@ -112,7 +129,10 @@ async def agent_node(state: AgentState, llm_with_tools) -> dict:
     trace = state.get("agent_trace", [])
     if hasattr(response, "tool_calls") and response.tool_calls:
         for tc in response.tool_calls:
+            logger.info("tool_call", tool=tc["name"], iteration=iteration)
             trace = trace + [f"Calling tool: {tc['name']}"]
+    else:
+        logger.info("agent_iteration_no_tools", iteration=iteration)
 
     return {
         "messages": new_messages,       # ← only NEW messages; add_messages appends them
@@ -134,13 +154,16 @@ def validate_output_node(state: AgentState) -> dict:
             try:
                 sheet = ProductSheet.model_validate_json(msg.content)
                 sheet.agent_trace = state.get("agent_trace", [])
+                logger.info("product_sheet_validated", product=state["request"].product_name)
                 return {
                     "product_sheet": sheet,
                     "agent_trace": state.get("agent_trace", []) + ["Product sheet validated successfully."],
                 }
             except Exception as exc:
+                logger.error("product_sheet_validation_failed", error=str(exc), exc_info=True)
                 return {"error": f"ProductSheet validation failed: {exc}"}
 
+    logger.error("format_product_sheet_not_called", product=state["request"].product_name)
     return {"error": "format_product_sheet was never called. Cannot finalise product sheet."}
 
 

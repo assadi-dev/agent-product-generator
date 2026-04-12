@@ -3,8 +3,10 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from backend.models.requests import GenerateRequest
 from backend.models.responses import GenerateResponse
+from backend.logging_config import get_logger
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 
 def _initial_state(request: GenerateRequest) -> dict:
@@ -29,13 +31,16 @@ async def generate(request: GenerateRequest):
     try:
         final_state = await graph.ainvoke(_initial_state(request), config=config)
     except Exception as exc:
+        logger.error("generate_agent_exception", product=request.product_name, error=str(exc), exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
 
     if final_state.get("error") and not final_state.get("product_sheet"):
+        logger.error("generate_agent_error", product=request.product_name, detail=final_state["error"])
         raise HTTPException(status_code=422, detail=final_state["error"])
 
     sheet = final_state.get("product_sheet")
     if sheet is None:
+        logger.error("generate_no_sheet", product=request.product_name)
         raise HTTPException(status_code=422, detail="Agent did not produce a product sheet.")
 
     sheet.agent_trace = final_state.get("agent_trace", [])
@@ -102,6 +107,7 @@ async def generate_stream(request: GenerateRequest):
                         yield f"data: {payload}\n\n"
 
         except Exception as exc:
+            logger.error("stream_exception", product=request.product_name, error=str(exc), exc_info=True)
             payload = json.dumps({"type": "error", "message": str(exc)})
             yield f"data: {payload}\n\n"
 

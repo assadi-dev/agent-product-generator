@@ -1,6 +1,9 @@
 import httpx
 from bs4 import BeautifulSoup
 from langchain_core.tools import tool
+from backend.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 @tool
@@ -10,6 +13,7 @@ async def scrape_product_url(url: str) -> str:
     Use this tool ONLY when the user has provided a source_url to enrich the product sheet.
     Returns a plain text string with the most relevant product information found on the page.
     """
+    logger.info("scrape_start", url=url)
     try:
         async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
             response = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -33,7 +37,16 @@ async def scrape_product_url(url: str) -> str:
 
         content = f"Page Title: {title}\nMeta Description: {meta_desc}\n\nContent:\n{body}"
         # Limit total length to ~3000 chars to stay within context
-        return content[:3000]
+        result = content[:3000]
+        logger.info("scrape_success", url=url, content_length=len(result))
+        return result
 
+    except httpx.HTTPStatusError as exc:
+        logger.error("scrape_http_error", url=url, status_code=exc.response.status_code, error=str(exc))
+        return f"[scrape_error] HTTP {exc.response.status_code} for URL: {url}"
+    except httpx.RequestError as exc:
+        logger.error("scrape_request_error", url=url, error=str(exc))
+        return f"[scrape_error] Could not reach URL: {exc}"
     except Exception as exc:
+        logger.error("scrape_unexpected_error", url=url, error=str(exc), exc_info=True)
         return f"[scrape_error] Could not fetch URL: {exc}"
