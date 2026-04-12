@@ -4,8 +4,6 @@ Returns a GenerateRequest-compatible dict when submitted.
 """
 import base64
 import streamlit as st
-from PIL import Image
-import io
 
 
 def render_input_form() -> dict | None:
@@ -22,10 +20,14 @@ def render_input_form() -> dict | None:
     )
     if uploaded is not None:
         img_bytes = uploaded.read()
-        st.session_state["product_image_b64"] = base64.b64encode(img_bytes).decode()
+        b64 = base64.b64encode(img_bytes).decode()
+        st.session_state["product_image_b64"] = b64
         st.session_state["product_image_mime"] = uploaded.type
-        image = Image.open(io.BytesIO(img_bytes))
-        st.image(image, width=600)
+        # Use data URI to bypass Streamlit's PIL validation (supports WebP natively in browser)
+        st.markdown(
+            f'<img src="data:{uploaded.type};base64,{b64}" style="max-width:100%;width:600px;" />',
+            unsafe_allow_html=True,
+        )
     elif "product_image_b64" not in st.session_state:
         st.session_state["product_image_b64"] = None
         st.session_state["product_image_mime"] = None

@@ -13,6 +13,9 @@ async def scrape_product_url(url: str) -> str:
     Use this tool ONLY when the user has provided a source_url to enrich the product sheet.
     Returns a plain text string with the most relevant product information found on the page.
     """
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
     logger.info("scrape_start", url=url)
     try:
         async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
