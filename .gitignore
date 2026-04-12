@@ -1,0 +1,68 @@
+# ── Environment ──────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.so
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Poetry ───────────────────────────────────────────────────────────────────
+# Keep poetry.lock in version control — remove this line if you use pip only
+# poetry.lock
+
+# ── Generated exports ─────────────────────────────────────────────────────────
+exports/pdf/
+exports/json/
+# Keep the directory itself tracked
+!exports/.gitkeep
+
+# ── LangGraph / LangChain cache ───────────────────────────────────────────────
+.langchain.db
+langchain_cache/
+
+# ── Streamlit ────────────────────────────────────────────────────────────────
+.streamlit/secrets.toml
+
+# ── AWS credentials (never commit) ────────────────────────────────────────────
+.aws/
+aws-credentials*
+
+# ── Ollama (downloaded model weights) ────────────────────────────────────────
+*.gguf
+*.bin
+models/
+
+# ── Tests & coverage ─────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
