@@ -11,6 +11,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+col, col_login = st.columns([8, 2])
+# Login with Google
+if not st.user.is_logged_in:
+
+    if col_login.button("Se connecter avec Google", type="secondary", use_container_width=True):
+        st.login("google")
+
+if st.user.is_logged_in:
+    col.markdown(f"### *Welcome* {st.user.name}")
+    if col_login.button("Se déconnecter", use_container_width=True):
+        st.logout()
+        st.stop()
+
+
 # Sidebar navigation handled by Streamlit multipage (pages/ directory)
 st.sidebar.title("Product Sheet Generator")
 st.sidebar.markdown("AI-powered fiche produit generator using a LangGraph agent.")
