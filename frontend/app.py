@@ -11,16 +11,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
+
 col, col_login = st.columns([8, 2])
 # Login with Google
 if not st.user.is_logged_in:
 
-    if col_login.button("Se connecter avec Google", type="secondary", use_container_width=True):
+    if col_login.button("Login with Google", type="secondary", use_container_width=True):
         st.login("google")
 
 if st.user.is_logged_in:
+    with st.expander("Debug: st.user", expanded=False):
+        st.json(dict(st.user))
     col.markdown(f"### *Welcome* {st.user.name}")
-    if col_login.button("Se déconnecter", use_container_width=True):
+    if col_login.button("Logout", use_container_width=True):
         st.logout()
         st.stop()
 
