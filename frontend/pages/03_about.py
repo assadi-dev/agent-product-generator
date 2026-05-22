@@ -80,5 +80,5 @@ stateDiagram-v2
 st.divider()
 st.markdown(
     "Built as a portfolio project to demonstrate practical GenAI agent development. "
-    "[Source code available on GitHub](https://github.com)"
+    "[Source code available on GitHub](https://github.com/assadi-dev/agent-product-generator)"
 )
