@@ -1,2 +1,2 @@
 release: pip install -e .
-web: start.sh
+web: python3 main.py
