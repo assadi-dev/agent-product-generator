@@ -47,7 +47,7 @@ dev = [
 ]
 
 [project.scripts]
-agent-product-generator = "backend.__main__:main"
+"agent-product-generator" = "backend.__main__:main"
 
 [build-system]
 requires = ["hatchling"]
