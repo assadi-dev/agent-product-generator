@@ -36,7 +36,7 @@ exports/json/
 langchain_cache/
 
 # ── Streamlit ────────────────────────────────────────────────────────────────
-.streamlit
+.streamlit/*
 
 # ── AWS credentials (never commit) ────────────────────────────────────────────
 .aws/
