@@ -4,6 +4,8 @@ An AI agent that generates complete, publication-ready product sheets for market
 
 Built as a portfolio project to demonstrate real-world LangGraph agent development.
 
+**[Live demo](https://generateproductproject-app-usywwk-6a2668-212-227-194-86.sslip.io/)**
+
 ---
 
 ## What it does
