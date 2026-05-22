@@ -51,7 +51,7 @@ try:
     mermaid_code = get_graph_mermaid()
     # Render via streamlit-extras mermaid or fallback to code block
     try:
-        from streamlit_extras.add_vertical_space import add_vertical_space
+        from streamlit_extras.add_vertical_space import add_vertical_space # pyright: ignore[reportMissingImports]
         st.markdown(f"```mermaid\n{mermaid_code}\n```")
     except ImportError:
         st.code(mermaid_code, language="text")
