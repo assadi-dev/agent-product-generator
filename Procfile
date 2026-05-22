@@ -1,2 +1,2 @@
 release: pip install -e .
-web: start
+web: start.sh
