@@ -21,8 +21,6 @@ if not st.user.is_logged_in:
         st.login("google")
 
 if st.user.is_logged_in:
-    with st.expander("Debug: st.user", expanded=False):
-        st.json(dict(st.user))
     col.markdown(f"### *Welcome* {st.user.name}")
     if col_login.button("Logout", use_container_width=True):
         st.logout()
